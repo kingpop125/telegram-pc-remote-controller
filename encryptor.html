@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trodoon E2EE Controller</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Cairo:wght@300;400;700&display=swap" rel="stylesheet">
+    <!-- CryptoJS Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-color: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.5);
+            --text-color: #f3f4f6;
+            --text-muted: #9ca3af;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Cairo', 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(147, 51, 234, 0.08) 0%, transparent 40%);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 550px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 25px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #60a5fa, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        input[type="password"], textarea {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            color: var(--text-color);
+            font-size: 15px;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        input[type="password"]:focus, textarea:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--card-border);
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+            text-align: center;
+        }
+
+        .tab-btn.active {
+            color: var(--accent-color);
+            border-bottom-color: var(--accent-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-color);
+            border: 1px solid var(--card-border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .output-container {
+            margin-top: 20px;
+            position: relative;
+        }
+
+        .copy-btn {
+            position: absolute;
+            left: 10px;
+            top: 40px;
+            padding: 4px 8px;
+            font-size: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            border: 1px solid var(--card-border);
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* File Upload */
+        .file-upload-box {
+            border: 2px dashed var(--card-border);
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-upload-box:hover {
+            border-color: var(--accent-color);
+            background: rgba(59, 130, 246, 0.03);
+        }
+
+        .file-upload-box input {
+            display: none;
+        }
+
+        #image-preview {
+            max-width: 100%;
+            margin-top: 20px;
+            border-radius: 12px;
+            display: none;
+            border: 1px solid var(--card-border);
+        }
+
+        .alert {
+            padding: 10px 15px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🔒 تشفير Trodoon E2EE</h1>
+
+    <div class="form-group">
+        <label for="password">كلمة المرور المشتركة (Shared Password)</label>
+        <input type="password" id="password" placeholder="أدخل كلمة المرور المطابقة للكمبيوتر">
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('text-tab')">💬 النصوص والأوامر</button>
+        <button class="tab-btn" onclick="switchTab('file-tab')">📸 فك تشفير الشاشة</button>
+    </div>
+
+    <!-- النصوص -->
+    <div id="text-tab" class="tab-content active">
+        <div class="form-group">
+            <label for="text-input">النص المراد تشفيره أو فك تشفيره</label>
+            <textarea id="text-input" placeholder="اكتب الأمر هنا (مثال: /screenshot أو /cmd dir) لتشفيره، أو الصق الرد المشفر لفك تشفيره..."></textarea>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn-primary" onclick="processText(true)">🔒 تشفير وإرسال</button>
+            <button class="btn-secondary" onclick="processText(false)">🔓 فك التشفير</button>
+        </div>
+
+        <div class="form-group output-container">
+            <label for="text-output">النتيجة</label>
+            <button class="copy-btn" onclick="copyOutput()">نسخ</button>
+            <textarea id="text-output" readonly placeholder="ستظهر النتيجة هنا..."></textarea>
+        </div>
+    </div>
+
+    <!-- الصور والملفات -->
+    <div id="file-tab" class="tab-content">
+        <div class="alert">
+            ℹ️ فك تشفير لقطة الشاشة يتم بالكامل محلياً على هاتفك دون رفعه لأي مكان.
+        </div>
+
+        <div class="file-upload-box" onclick="document.getElementById('file-input').click()">
+            <span style="font-size: 32px;">📁</span>
+            <p style="margin-top: 10px; font-weight: 600;">اضغط هنا لاختيار ملف الشاشة المشفر (.enc)</p>
+            <input type="file" id="file-input" accept=".enc" onchange="decryptImageFile(event)">
+        </div>
+
+        <img id="image-preview" alt="شاشة الكمبيوتر بعد فك التشفير">
+    </div>
+</div>
+
+<script>
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById(tabId).classList.add('active');
+        event.currentTarget.classList.add('active');
+    }
+
+    // دوال التشفير المتوافقة مع البايثون
+    function deriveKeyAndIv(password) {
+        var key = CryptoJS.SHA256(password);
+        var iv = CryptoJS.MD5(password);
+        return { key: key, iv: iv };
+    }
+
+    function processText(isEncrypt) {
+        var password = document.getElementById('password').value;
+        var input = document.getElementById('text-input').value;
+        
+        if (!password) {
+            alert('رجاءً أدخل كلمة المرور أولاً!');
+            return;
+        }
+        if (!input) {
+            alert('رجاءً أدخل نصاً للمعالجة!');
+            return;
+        }
+
+        var config = deriveKeyAndIv(password);
+
+        try {
+            if (isEncrypt) {
+                var encrypted = CryptoJS.AES.encrypt(input, config.key, { iv: config.iv });
+                document.getElementById('text-output').value = encrypted.toString();
+            } else {
+                var decrypted = CryptoJS.AES.decrypt(input, config.key, { iv: config.iv });
+                var decryptedText = decrypted.toString(CryptoJS.enc.Utf8);
+                if (!decryptedText) throw new Error();
+                document.getElementById('text-output').value = decryptedText;
+            }
+        } catch (e) {
+            alert('فشلت العملية! تأكد من صحة كلمة المرور وصلاحية النص المشفر.');
+        }
+    }
+
+    function decryptImageFile(event) {
+        var password = document.getElementById('password').value;
+        var file = event.target.files[0];
+        
+        if (!password) {
+            alert('رجاءً أدخل كلمة المرور أولاً!');
+            event.target.value = '';
+            return;
+        }
+        if (!file) return;
+
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var encryptedBase64 = e.target.result.split(',')[1] || e.target.result;
+            var config = deriveKeyAndIv(password);
+            
+            try {
+                var decrypted = CryptoJS.AES.decrypt(encryptedBase64, config.key, { iv: config.iv });
+                var decryptedBase64 = decrypted.toString(CryptoJS.enc.Base64);
+                
+                if (!decryptedBase64) throw new Error();
+                
+                var img = document.getElementById('image-preview');
+                img.src = 'data:image/png;base64,' + decryptedBase64;
+                img.style.display = 'block';
+            } catch (err) {
+                alert('فشل فك تشفير الصورة! يرجى التأكد من صحة كلمة المرور.');
+                document.getElementById('image-preview').style.display = 'none';
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function copyOutput() {
+        var output = document.getElementById('text-output');
+        output.select();
+        document.execCommand('copy');
+        alert('تم نسخ النتيجة إلى الحافظة!');
+    }
+</script>
+
+</body>
+</html>

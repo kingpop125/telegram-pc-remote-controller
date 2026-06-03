@@ -1,0 +1,17 @@
+# Credentials & Configuration
+config.py
+
+# Python Environment
+.venv/
+__pycache__/
+*.pyc
+
+# Temporary Files
+temp_screenshot.png
+temp_screenshot_ai.png
+output.txt
+ai_report.txt
+IDE_Chat_History.txt
+
+# Log Files
+*.log
